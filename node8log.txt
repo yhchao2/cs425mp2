@@ -1,0 +1,7 @@
+node8 joinednode2 joined
+node1 joined
+node3 joined
+node4 joined
+node5 joined
+node6 joined
+node7 joined

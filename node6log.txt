@@ -1,0 +1,17 @@
+node6 joinednode2 joined
+node1 joined
+node3 joined
+node4 joined
+node5 joined
+node7 joined
+node8 joined
+node8 has failed!
+node8 joined
+node8 has failed!
+node8 joined
+node8 has failed!
+node7 has failed!
+node1 has failed!
+node2 has failed!
+node3 has failed!
+node4 has failed!

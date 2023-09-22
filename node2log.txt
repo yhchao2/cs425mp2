@@ -1,0 +1,11 @@
+node2 joined
+node1 joined
+node3 joined
+node4 joined
+suspect node4 has failed!
+node4 failed
+Removing node4 from membership list after T_cleanup.
+node4 joined
+suspect node4 has failed!
+node4 failed
+Removing node4 from membership list after T_cleanup.

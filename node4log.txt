@@ -1,0 +1,4 @@
+node4 joined
+node3 joined
+node2 joined
+node1 joined
