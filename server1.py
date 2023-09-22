@@ -6,8 +6,8 @@ import sys
 import random
 
 T_GOSSIP = 0.5
-FAILURE_THRESHOLD = 6
-T_CLEANUP = 6
+FAILURE_THRESHOLD = 8
+T_CLEANUP = 8
 
 def log_event(message, filename):
     with open(filename, 'a') as f:
@@ -60,6 +60,7 @@ def receiver(name, sock):
                         if node not in membership_list and node_data["status"] != "failed":
                             membership_list[node] = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "online", "incarnation":0}
                             output = node + " joined"
+                            print(output)
                             log_event(output, filename)
                         # Update if the received heartbeat_counter is newer
                         if node_data["status"] != "failed":
@@ -78,18 +79,22 @@ def receiver(name, sock):
                         if node not in membership_list and node_data["status"] != "failed":
                             membership_list[node] = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "online", "incarnation":0}
                             output = node + " joined"
+                            print(output)
                             log_event(output, filename)
                             #print(output)
                         # Update if the received heartbeat_counter is newer    
-                        if membership_list[node]["status"] == "suspect":
-                            if node_data["incarnation"] > membership_list[node]["incarnation"]:
-                                membership_list[node] = node_data
-                                membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
-                                membership_list[node]["status"] = "online"
-                        elif node_data["status"] != "failed":
-                            if node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
-                                membership_list[node] = node_data
-                                membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                        if node not in membership_list and node_data["status"] == "failed":
+                            pass
+                        else :
+                            if membership_list[node]["status"] == "suspect":
+                                if node_data["incarnation"] > membership_list[node]["incarnation"]:
+                                    membership_list[node] = node_data
+                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                                    membership_list[node]["status"] = "online"
+                            elif node_data["status"] != "failed":
+                                if node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
+                                    membership_list[node] = node_data
+                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
                         if node == node_name and node_data["status"] == "suspect":
                             membership_list[node]["status"] = "online"
                             membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
@@ -241,16 +246,20 @@ if __name__ == "__main__":
         'node9': ("127.0.0.1", 8019),
         'node10': ("127.0.0.1", 8020)
     }
+    
     ip_list = ['fa23-cs425-7601.cs.illinois.edu','fa23-cs425-7602.cs.illinois.edu'
     ,'fa23-cs425-7603.cs.illinois.edu','fa23-cs425-7604.cs.illinois.edu'
     ,'fa23-cs425-7605.cs.illinois.edu','fa23-cs425-7606.cs.illinois.edu'
     ,'fa23-cs425-7607.cs.illinois.edu','fa23-cs425-7608.cs.illinois.edu'
     ,'fa23-cs425-7609.cs.illinois.edu','fa23-cs425-7610.cs.illinois.edu']
 
+    """
     for i, key in enumerate(NODES.keys()):
         port = NODES[key][1]
         NODES[key] = (ip_list[i], port)
 
+    """
+    
     # Node status (online/leave)
     status = 'online'
     suspicion = True
