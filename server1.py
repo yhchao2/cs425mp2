@@ -17,7 +17,7 @@ def command_line_interface():
             print("Exiting command line interface.")
             break
         elif cmd == 'leave':
-            status = 'leave'
+            status = 'failed'
             membership_list[node_name]["status"] = status  # Update local membership status
             print("Node set to 'leave' status.")
         elif cmd == 'join':
@@ -44,6 +44,7 @@ def command_line_interface():
 def receiver(name, sock):
     while True:
         # Receive data
+        
         if status == 'online':
             if suspicion == False:
                 try:
@@ -51,20 +52,48 @@ def receiver(name, sock):
                     received_list = json.loads(data.decode())
                     lock.acquire()
                     for node, node_data in received_list.items():
-                        if node not in membership_list and node_data["status"] != "leave":
-                            membership_list[node] = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "leave", "incarnation":0}
+                        if node not in membership_list and node_data["status"] != "failed":
+                            membership_list[node] = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "online", "incarnation":0}
                             output = node + " joined"
                             print(output)
-                        # Update if the received version_id is newer
-                        if node_data["status"] != "leave":
+                        # Update if the received heartbeat_counter is newer
+                        if node_data["status"] != "failed":
                             if node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
                                 membership_list[node] = node_data
                                 membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
                     lock.release()
                 except socket.timeout:
                     pass
+            else: 
+                
+                try:
+                    data, addr = sock.recvfrom(4096)
+                    received_list = json.loads(data.decode())
+                    lock.acquire()
+                    for node, node_data in received_list.items():
+                        
+                        if node not in membership_list:
+                            membership_list[node] = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "online", "incarnation":0}
+                            output = node + " joined"
+                            print(output)
+                        # Update if the received heartbeat_counter is newer    
+                        if membership_list[node]["status"] == "suspect":
+                            if node_data["incarnation"] > membership_list[node]["incarnation"]:
+                                membership_list[node] = node_data
+                                membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                                membership_list[node]["status"] = "online"
+                        elif node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
+                            membership_list[node] = node_data
+                            membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                        if node == node_name and node_data["status"] == "suspect":
+                            membership_list[node]["status"] = "online"
+                            membership_list[node]["incarnation"] += 1
+                        
+                    lock.release()
+                except socket.timeout:
+                    pass
 
-def failure_detector(name):
+def failure_detector(node_name):
     while True:
         if status == 'online':
             if suspicion == False:
@@ -72,9 +101,9 @@ def failure_detector(name):
                 #suspected_nodes = []
                 lock.acquire()
                 for node, node_data in membership_list.items():
-                    if node != name and membership_list[node_name]["local_clock"] - node_data["local_clock"] > FAILURE_THRESHOLD and node_data["status"] == 'online':
-                        print(f"{name} suspects {node} has failed!")
-                        membership_list[node]["status"] = "leave"
+                    if node != node_name and membership_list[node_name]["local_clock"] - node_data["local_clock"] >= FAILURE_THRESHOLD and node_data["status"] == 'online':
+                        print(f"{node_name} suspects {node} has failed!")
+                        membership_list[node]["status"] = "failed"
                         #suspected_nodes.append(node)
                         failed_nodes[node] = membership_list[node_name]["local_clock"]
 
@@ -90,25 +119,53 @@ def failure_detector(name):
                     #for node in suspected_nodes:
                     #    del membership_list[node]
                 lock.release()
-                time.sleep(T_GOSSIP)
+            else:
+                current_time = time.time()
+                #suspected_nodes = []
+                lock.acquire()
+                for node, node_data in membership_list.items():
+                    if node_data["status"] == "online" and membership_list[node_name]["local_clock"] - node_data["local_clock"] <= T_CLEANUP and node in suspected_nodes:
+                        print(f"{node} is now active again.")
+                        del suspected_nodes[node]
 
-def gossip(name):
-    ip, port = NODES[name]
+                    elif node != node_name and membership_list[node_name]["local_clock"] - node_data["local_clock"] > FAILURE_THRESHOLD and node_data["status"] == 'online':
+                        print(f"{node_name} suspects {node} has failed!")
+                        membership_list[node]["status"] = "suspected"
+                        suspected_nodes[node] = membership_list[node_name]["local_clock"]
+
+                # Check if any suspected node has surpassed the T_CLEANUP interval
+                nodes_to_remove = [node for node, suspect_time in suspected_nodes.items() if membership_list[node_name]["local_clock"] - suspect_time > T_CLEANUP]
+
+                # Remove nodes that have surpassed the T_CLEANUP from the membership list and suspected_nodes list
+                for node in nodes_to_remove:
+                    print(f"Removing {node} from membership list due to prolonged inactivity.")
+                    if node in membership_list:
+                        del membership_list[node]
+                    del suspected_nodes[node]
+                    #for node in suspected_nodes:
+                    #    del membership_list[node]
+                lock.release()
+
+            time.sleep(T_GOSSIP)
+
+def gossip(node_name):
+    ip, port = NODES[node_name]
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind((ip, port))
     
     # Start the receiver in a separate thread
-    receiver_thread = threading.Thread(target=receiver, args=(name,s))
+    receiver_thread = threading.Thread(target=receiver, args=(node_name,s))
     receiver_thread.start()
 
-    failure_detector_thread = threading.Thread(target=failure_detector, args=(name,))
+    failure_detector_thread = threading.Thread(target=failure_detector, args=(node_name,))
     failure_detector_thread.start()
-
+    
     while True:
         # Update and send own data only if the node is online
+        
         lock.acquire()
         if status == 'online':
-            if suspicion == False:
+            #if suspicion == False:
                 membership_list[node_name]["timestamp"] = time.time()
                 #membership_list[name]["version_id"] += 1
                 membership_list[node_name]["local_clock"] += 1
@@ -132,6 +189,7 @@ def gossip(name):
                 #for key, value in membership_list.items():
                 #    output = key + ":" + value["status"]
                 #   print(output)
+            
         lock.release()
         time.sleep(T_GOSSIP)
 
@@ -153,7 +211,7 @@ if __name__ == "__main__":
 
     # Node status (online/leave)
     status = 'online'
-    suspicion = False
+    suspicion = True
 
     lock = threading.Lock()
 
@@ -163,9 +221,10 @@ if __name__ == "__main__":
     
     node_name = sys.argv[1]
     # Membership list initialization
-    initial_data = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "leave", "incarnation":0}
+    initial_data = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "online", "incarnation":0}
     membership_list = {node_name: initial_data}
-    failed_nodes = {}  # To keep track of when nodes were first suspected
+    failed_nodes = {}  # To keep track of when nodes were first failed
+    suspected_nodes = {}
     #print(membership_list)
     if node_name not in NODES:
         print(f"Unknown node name. Choose from: {', '.join(NODES.keys())}")
