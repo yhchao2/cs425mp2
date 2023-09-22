@@ -119,6 +119,7 @@ def failure_detector(node_name):
                 # Remove nodes that have surpassed the T_CLEANUP from the membership list and suspected_nodes list
                 for node in nodes_to_remove:
                     output = "Removing " + node + " from membership list after T_cleanup."
+                    print(output)
                     log_event(output, filename)
                     if node in membership_list:
                         del membership_list[node]
@@ -149,6 +150,7 @@ def failure_detector(node_name):
                 # Remove nodes that have surpassed the FAILURE_THRESHOLD from the membership list and suspected_nodes list
                 for node in nodes_that_failed:
                     output = node + " failed"
+                    print(output)
                     log_event(output, filename)
                     if node in membership_list:
                         membership_list[node]["status"] = "failed"
@@ -160,7 +162,7 @@ def failure_detector(node_name):
 
                 # Remove nodes that have surpassed the FAILURE_THRESHOLD from the membership list and suspected_nodes list
                 for node in nodes_to_remove:
-                    print(f"Removing {node} from membership list due to prolonged inactivity.")
+                    print(f"Removing {node} from membership list after T_cleanup.")
                     output = "Removing " + node + " from membership list after T_cleanup."
                     log_event(output, filename)
                     if node in membership_list:
