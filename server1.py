@@ -202,7 +202,7 @@ def gossip(node_name):
         #print(f"printing {received_list}")
         #print(f"printing {membership_list}")
         membership_list.update(received_list)
-        #print(f"printing {membership_list}")
+        print(f"printing {membership_list}")
     # Start the receiver in a separate thread
     receiver_thread = threading.Thread(target=receiver, args=(node_name,s))
     receiver_thread.start()

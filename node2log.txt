@@ -1,1 +1,7 @@
 node2 joined
+node3 joined
+node3 has failed!
+Removing node3 from membership list after T_cleanup.
+node3 joined
+node4 joined
+node5 joined
