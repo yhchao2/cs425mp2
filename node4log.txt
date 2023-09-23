@@ -1,2 +1,9 @@
 node4 joined
 node5 joined
+suspect node5 has failed!
+node5 failed
+Removing node5 from membership list after T_cleanup.
+node5 joined
+suspect node5 has failed!
+node5 failed
+Removing node5 from membership list after T_cleanup.

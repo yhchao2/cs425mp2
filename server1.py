@@ -16,6 +16,7 @@ def log_event(message, filename):
 
 def command_line_interface():
     global status
+    global suspicion
     while True:
         cmd = input("Enter your command (type 'exit' to quit, 'leave' to set status to leave, 'online' to set status to online): ")
         if cmd == 'exit':
