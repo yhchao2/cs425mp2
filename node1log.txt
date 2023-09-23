@@ -1,3 +1,7 @@
 node1 joined
 node2 joined
 node3 joined
+suspect node2 has failed!
+suspect node3 has failed!
+node3 is now active again.
+node2 is now active again.
