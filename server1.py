@@ -6,8 +6,8 @@ import sys
 import random
 
 T_GOSSIP = 0.5
-FAILURE_THRESHOLD = 6
-T_CLEANUP = 6
+FAILURE_THRESHOLD = 8
+T_CLEANUP = 8
 
 def log_event(message, filename):
     with open(filename, 'a') as f:
@@ -95,6 +95,7 @@ def receiver(name, s):
                             #print(output)
                         # Update if the received heartbeat_counter is newer    
                         elif node in membership_list:
+                            """
                             if node_data["status"] == "online" and node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
                                 membership_list[node] = node_data
                                 membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
@@ -103,6 +104,26 @@ def receiver(name, s):
                                 membership_list[node] = node_data
                                 membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
                                 membership_list[node]["status"] = "online"
+                            """
+                            if membership_list[node]["status"] == 'online' and node_data["status"] == "suspect":
+                                if membership_list[node]['incarnation'] < node_data["incarnation"]:
+                                    membership_list[node] = node_data
+                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                                    membership_list[node]["status"] = "suspect"
+                            elif membership_list[node]["status"] == 'suspect' and node_data["status"] == "online":
+                                if membership_list[node]['incarnation'] < node_data["incarnation"]:
+                                    membership_list[node] = node_data
+                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                                    membership_list[node]["status"] = "online"
+                            elif membership_list[node]["status"] == 'suspect' and node_data["status"] == "suspect":
+                                if membership_list[node]['incarnation'] < node_data["incarnation"]:
+                                    membership_list[node] = node_data
+                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                                    membership_list[node]["status"] = "suspect"
+                            elif membership_list[node]["status"] == 'online' and node_data["status"] == "online":
+                                if node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
+                                    membership_list[node] = node_data
+                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
 
                         if node == node_name and node_data["status"] == "suspect":
                             membership_list[node]["status"] = "online"
@@ -278,9 +299,9 @@ if __name__ == "__main__":
     ,'fa23-cs425-7609.cs.illinois.edu','fa23-cs425-7610.cs.illinois.edu']
 
     
-    #for i, key in enumerate(NODES.keys()):
-     #   port = NODES[key][1]
-      #  NODES[key] = (ip_list[i], port)
+    for i, key in enumerate(NODES.keys()):
+        port = NODES[key][1]
+        NODES[key] = (ip_list[i], port)
     
     # Node status (online/leave)
     status = 'online'
