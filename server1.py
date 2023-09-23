@@ -83,18 +83,16 @@ def receiver(name, sock):
                             log_event(output, filename)
                             #print(output)
                         # Update if the received heartbeat_counter is newer    
-                        if node not in membership_list and node_data["status"] == "failed":
-                            pass
-                        else :
-                            if membership_list[node]["status"] == "suspect":
-                                if node_data["incarnation"] > membership_list[node]["incarnation"]:
-                                    membership_list[node] = node_data
-                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
-                                    membership_list[node]["status"] = "online"
-                            elif node_data["status"] != "failed":
-                                if node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
-                                    membership_list[node] = node_data
-                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                        
+                        if membership_list[node]["status"] == "suspect":
+                            if node_data["incarnation"] > membership_list[node]["incarnation"]:
+                                membership_list[node] = node_data
+                                membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                                membership_list[node]["status"] = "online"
+                        elif node_data["status"] != "failed":
+                            if node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
+                                membership_list[node] = node_data
+                                membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
                         if node == node_name and node_data["status"] == "suspect":
                             membership_list[node]["status"] = "online"
                             membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
