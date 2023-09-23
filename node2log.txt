@@ -1,11 +1,14 @@
 node2 joined
+node1 joined
 node3 joined
+suspect node3 has failed!
+node3 is now active again.
 node4 joined
-node5 joined
-suspect node5 has failed!
-node5 failed
-Removing node5 from membership list after T_cleanup.
-node5 joined
-suspect node5 has failed!
-node5 failed
-Removing node5 from membership list after T_cleanup.
+suspect node4 has failed!
+node4 is now active again.
+suspect node4 has failed!
+node4 failed
+Removing node4 from membership list after T_cleanup.
+node4 joined
+suspect node4 has failed!
+node4 is now active again.

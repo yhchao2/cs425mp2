@@ -6,8 +6,8 @@ import sys
 import random
 
 T_GOSSIP = 0.5
-FAILURE_THRESHOLD = 16
-T_CLEANUP = 16
+FAILURE_THRESHOLD = 6
+T_CLEANUP = 6
 
 def log_event(message, filename):
     with open(filename, 'a') as f:
@@ -37,7 +37,7 @@ def command_line_interface():
         elif cmd == 'disable suspicion':
             suspicion = False
             print("disable gossip s")
-        elif cmd == 'enable suspucion':
+        elif cmd == 'enable suspicion':
             suspicion = True
             print("enable gossip s")
         elif cmd == 'list_mem':
@@ -94,18 +94,16 @@ def receiver(name, s):
                             log_event(output, filename)
                             #print(output)
                         # Update if the received heartbeat_counter is newer    
-                        if node not in membership_list and node_data["status"] == "failed":
-                            pass
-                        else :
-                            if membership_list[node]["status"] == "suspect":
-                                if node_data["incarnation"] > membership_list[node]["incarnation"]:
-                                    membership_list[node] = node_data
-                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
-                                    membership_list[node]["status"] = "online"
-                            elif node_data["status"] != "failed":
-                                if node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
-                                    membership_list[node] = node_data
-                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                        elif node in membership_list:
+                            if node_data["status"] == "online" and node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
+                                membership_list[node] = node_data
+                                membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+
+                            elif node_data["status"] == "suspect" and node_data["incarnation"] > membership_list[node]["incarnation"]:
+                                membership_list[node] = node_data
+                                membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                                membership_list[node]["status"] = "online"
+
                         if node == node_name and node_data["status"] == "suspect":
                             membership_list[node]["status"] = "online"
                             membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
@@ -117,7 +115,7 @@ def receiver(name, s):
 
 def failure_detector(node_name):
     while True:
-        if status == 'online':
+        #if status == 'online':
             if suspicion == False:
                 current_time = time.time()
                 lock.acquire()
@@ -203,7 +201,13 @@ def gossip(node_name):
         #print(f"printing {received_list}")
         #print(f"printing {membership_list}")
         membership_list.update(received_list)
-        print(f"printing {membership_list}")
+        #print(f"printing {membership_list}")
+        for node, node_data in membership_list.items():
+            if node != node_name:
+                output = node + " joined"
+                print(output)
+                log_event(output, filename)
+            
     # Start the receiver in a separate thread
     receiver_thread = threading.Thread(target=receiver, args=(node_name,s))
     receiver_thread.start()
@@ -215,13 +219,13 @@ def gossip(node_name):
         # Update and send own data only if the node is online
         
         lock.acquire()
-        if status == 'online':
+        
             #if suspicion == False:
-                membership_list[node_name]["timestamp"] = time.time()
-                #membership_list[name]["version_id"] += 1
-                membership_list[node_name]["local_clock"] += 1
-                membership_list[node_name]["heartbeat_counter"] += 1
-
+        membership_list[node_name]["timestamp"] = time.time()
+        #membership_list[name]["version_id"] += 1
+        membership_list[node_name]["local_clock"] += 1
+        membership_list[node_name]["heartbeat_counter"] += 1
+        if status == 'online':
                 # Send membership list to all other nodes
                 i = 0
                 nodeList = list(NODES.keys())
@@ -274,14 +278,15 @@ if __name__ == "__main__":
     ,'fa23-cs425-7609.cs.illinois.edu','fa23-cs425-7610.cs.illinois.edu']
 
     
-    for i, key in enumerate(NODES.keys()):
-        port = NODES[key][1]
-        NODES[key] = (ip_list[i], port)
+    #for i, key in enumerate(NODES.keys()):
+     #   port = NODES[key][1]
+      #  NODES[key] = (ip_list[i], port)
     
     # Node status (online/leave)
     status = 'online'
-    suspicion = False
+    suspicion = True
     lock = threading.Lock()
+
 
     if len(sys.argv) < 2:
         print("Usage: python script_name.py node_name")
