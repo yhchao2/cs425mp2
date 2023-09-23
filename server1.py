@@ -6,8 +6,8 @@ import sys
 import random
 
 T_GOSSIP = 0.5
-FAILURE_THRESHOLD = 8
-T_CLEANUP = 8
+FAILURE_THRESHOLD = 16
+T_CLEANUP = 16
 
 def log_event(message, filename):
     with open(filename, 'a') as f:
@@ -46,35 +46,45 @@ def command_line_interface():
         else:
             print(f"Unknown command: {cmd}")
 
-def receiver(name, sock):
+def receiver(name, s):
     while True:
         # Receive data
         
         if status == 'online':
+            
             if suspicion == False:
                 try:
-                    data, addr = sock.recvfrom(4096)
+                    data, addr = s.recvfrom(4096)
                     received_list = json.loads(data.decode())
                     lock.acquire()
-                    for node, node_data in received_list.items():
-                        if node not in membership_list and node_data["status"] != "failed":
-                            membership_list[node] = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "online", "incarnation":0}
-                            output = node + " joined"
-                            print(output)
-                            log_event(output, filename)
-                        # Update if the received heartbeat_counter is newer
-                        if node_data["status"] != "failed":
-                            if node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
-                                membership_list[node] = node_data
-                                membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
+                    first_key = list(received_list.keys())[0]
+                    if node_name == "node1" and received_list[first_key]["status"] == "joining":
+                        target_ip, target_port = NODES[first_key] 
+                        s.sendto(json.dumps(membership_list).encode(), (target_ip, target_port))
+                    else: 
+                        for node, node_data in received_list.items():
+                            if node not in membership_list and node_data["status"] != "failed":
+                                membership_list[node] = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "online", "incarnation":0}
+                                output = node + " joined"
+                                print(output)
+                                log_event(output, filename)
+                            # Update if the received heartbeat_counter is newer
+                            if node_data["status"] != "failed":
+                                if node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
+                                    membership_list[node] = node_data
+                                    membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
                     lock.release()
                 except socket.timeout:
                     pass
             else: 
                 try:
-                    data, addr = sock.recvfrom(4096)
+                    data, addr = s.recvfrom(4096)
                     received_list = json.loads(data.decode())
                     lock.acquire()
+                    first_key = list(received_list.keys())[0]
+                    if node_name == "node1" and received_list[first_key]["status"] == "joining":
+                        target_ip, target_port = NODES[first_key] 
+                        s.sendto(json.dumps(membership_list).encode(), (target_ip, target_port))
                     for node, node_data in received_list.items():
                         if node not in membership_list and node_data["status"] != "failed":
                             membership_list[node] = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "online", "incarnation":0}
@@ -183,7 +193,16 @@ def gossip(node_name):
     ip, port = NODES[node_name]
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind((ip, port))
-    
+    if node_name != "node1":  # If it's not node1, then request to join
+        introducer_ip, introducer_port = NODES["node1"]
+        msg = {node_name: {"status": "joining"}}
+        s.sendto(json.dumps(msg).encode(), (introducer_ip, introducer_port))
+        data, _ = s.recvfrom(4096)
+        received_list = json.loads(data.decode())
+        #print(f"printing {received_list}")
+        #print(f"printing {membership_list}")
+        membership_list.update(received_list)
+        #print(f"printing {membership_list}")
     # Start the receiver in a separate thread
     receiver_thread = threading.Thread(target=receiver, args=(node_name,s))
     receiver_thread.start()
@@ -257,12 +276,10 @@ if __name__ == "__main__":
     for i, key in enumerate(NODES.keys()):
         port = NODES[key][1]
         NODES[key] = (ip_list[i], port)
-
-    
     
     # Node status (online/leave)
     status = 'online'
-    suspicion = True
+    suspicion = False
     lock = threading.Lock()
 
     if len(sys.argv) < 2:
