@@ -50,9 +50,7 @@ def command_line_interface():
 def receiver(name, s):
     while True:
         # Receive data
-        
         if status == 'online':
-            
             if suspicion == False:
                 try:
                     data, addr = s.recvfrom(4096)
@@ -140,7 +138,7 @@ def failure_detector(node_name):
                 # Check if any suspected node has surpassed the T_CLEANUP interval
                 nodes_to_remove = [node for node, suspect_time in failed_nodes.items() if membership_list[node_name]["local_clock"] - suspect_time > T_CLEANUP]
 
-                # Remove nodes that have surpassed the T_CLEANUP from the membership list and suspected_nodes list
+                # Remove nodes that have surpassed the T_CLEANUP from the membership list and failed_nodes list
                 for node in nodes_to_remove:
                     output = "Removing " + node + " from membership list after T_cleanup."
                     print(output)
@@ -148,8 +146,6 @@ def failure_detector(node_name):
                     if node in membership_list:
                         del membership_list[node]
                     del failed_nodes[node]
-                    #for node in suspected_nodes:
-                    #    del membership_list[node]
                 lock.release()
             else:
                 current_time = time.time()
@@ -184,7 +180,7 @@ def failure_detector(node_name):
                     #    del membership_list[node]
                 nodes_to_remove = [node for node, suspect_time in readytoremove_nodes.items() if membership_list[node_name]["local_clock"] - suspect_time > T_CLEANUP]
 
-                # Remove nodes that have surpassed the FAILURE_THRESHOLD from the membership list and suspected_nodes list
+                # Remove nodes that have surpassed the FAILURE_THRESHOLD from the membership list and readytoremove_nodes list
                 for node in nodes_to_remove:
                     print(f"Removing {node} from membership list after T_cleanup.")
                     output = "Removing " + node + " from membership list after T_cleanup."
@@ -208,10 +204,7 @@ def gossip(node_name):
         s.sendto(json.dumps(msg).encode(), (introducer_ip, introducer_port))
         data, _ = s.recvfrom(4096)
         received_list = json.loads(data.decode())
-        #print(f"printing {received_list}")
-        #print(f"printing {membership_list}")
         membership_list.update(received_list)
-        #print(f"printing {membership_list}")
         for node, node_data in membership_list.items():
             if node != node_name:
                 output = node + " joined"
@@ -226,15 +219,11 @@ def gossip(node_name):
     failure_detector_thread.start()
     
     while True:
-        # Update and send own data only if the node is online
-        
         lock.acquire()
-        
-            #if suspicion == False:
         membership_list[node_name]["timestamp"] = time.time()
-        #membership_list[name]["version_id"] += 1
         membership_list[node_name]["local_clock"] += 1
         membership_list[node_name]["heartbeat_counter"] += 1
+        # Update and send own data only if the node is online
         if status == 'online':
                 # Send membership list to all other nodes
                 i = 0
@@ -251,10 +240,6 @@ def gossip(node_name):
                             print ("Error sending data: %s" % e) 
                             print(target_node)
                             print(target_ip, target_port)
-
-                #for key, value in membership_list.items():
-                #    output = key + ":" + value["status"]
-                #   print(output)
             
         lock.release()
         time.sleep(T_GOSSIP)
@@ -288,11 +273,11 @@ if __name__ == "__main__":
     ,'fa23-cs425-7609.cs.illinois.edu','fa23-cs425-7610.cs.illinois.edu']
 
     
-    #for i, key in enumerate(NODES.keys()):
-    #    port = NODES[key][1]
-    #    NODES[key] = (ip_list[i], port)
+    for i, key in enumerate(NODES.keys()):
+       port = NODES[key][1]
+       NODES[key] = (ip_list[i], port)
     
-    # Node status (online/leave)
+    # Node status (online/failed)
     status = 'online'
     suspicion = True
     lock = threading.Lock()
