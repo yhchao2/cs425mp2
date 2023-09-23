@@ -1,1 +1,3 @@
 node5 joined
+node1 joined
+node6 joined

@@ -195,21 +195,39 @@ def failure_detector(node_name):
             time.sleep(T_GOSSIP)
 
 def gossip(node_name):
+    
     ip, port = NODES[node_name]
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind((ip, port))
     if node_name != "node1":  # If it's not node1, then request to join
         introducer_ip, introducer_port = NODES["node1"]
         msg = {node_name: {"status": "joining"}}
-        s.sendto(json.dumps(msg).encode(), (introducer_ip, introducer_port))
-        data, _ = s.recvfrom(4096)
-        received_list = json.loads(data.decode())
-        membership_list.update(received_list)
-        for node, node_data in membership_list.items():
-            if node != node_name:
-                output = node + " joined"
-                print(output)
-                log_event(output, filename)
+        try: 
+            s.sendto(json.dumps(msg).encode(), (introducer_ip, introducer_port))
+        except Exception as e:
+            print ("Error sending data: %s" % e) 
+            print(introducer_ip, introducer_port)
+        s.settimeout(0.5)
+        data = ""
+        try:
+            data, _ = s.recvfrom(4096)
+            received_list = json.loads(data.decode())
+        except socket.timeout:
+            #print("Server did not respond in time. It might be down.")
+            pass
+        except Exception as e:
+            #print("Error receiving data: %s" % e)
+            pass
+        
+        if data != "":  
+            received_list = json.loads(data.decode())     
+            membership_list.update(received_list)
+            for node, node_data in membership_list.items():
+                if node != node_name:
+                    output = node + " joined"
+                    print(output)
+                    log_event(output, filename)
+    #print(membership_list)
             
     # Start the receiver in a separate thread
     receiver_thread = threading.Thread(target=receiver, args=(node_name,s))
@@ -223,8 +241,10 @@ def gossip(node_name):
         membership_list[node_name]["timestamp"] = time.time()
         membership_list[node_name]["local_clock"] += 1
         membership_list[node_name]["heartbeat_counter"] += 1
+        
         # Update and send own data only if the node is online
         if status == 'online':
+                
                 # Send membership list to all other nodes
                 i = 0
                 nodeList = list(NODES.keys())
@@ -273,9 +293,9 @@ if __name__ == "__main__":
     ,'fa23-cs425-7609.cs.illinois.edu','fa23-cs425-7610.cs.illinois.edu']
 
     
-    for i, key in enumerate(NODES.keys()):
-       port = NODES[key][1]
-       NODES[key] = (ip_list[i], port)
+    #for i, key in enumerate(NODES.keys()):
+    #   port = NODES[key][1]
+    #   NODES[key] = (ip_list[i], port)
     
     # Node status (online/failed)
     status = 'online'
@@ -305,7 +325,7 @@ if __name__ == "__main__":
 
     cli_thread = threading.Thread(target=command_line_interface)
     cli_thread.start()
-
+    
     gossip(node_name)
 
     cli_thread.join()
