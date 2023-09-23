@@ -92,19 +92,8 @@ def receiver(name, s):
                             output = node + " joined"
                             print(output)
                             log_event(output, filename)
-                            #print(output)
                         # Update if the received heartbeat_counter is newer    
                         elif node in membership_list:
-                            """
-                            if node_data["status"] == "online" and node_data["heartbeat_counter"] > membership_list[node]["heartbeat_counter"]:
-                                membership_list[node] = node_data
-                                membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
-
-                            elif node_data["status"] == "suspect" and node_data["incarnation"] > membership_list[node]["incarnation"]:
-                                membership_list[node] = node_data
-                                membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
-                                membership_list[node]["status"] = "online"
-                            """
                             if membership_list[node]["status"] == 'online' and node_data["status"] == "suspect":
                                 if membership_list[node]['incarnation'] < node_data["incarnation"]:
                                     membership_list[node] = node_data
@@ -299,9 +288,9 @@ if __name__ == "__main__":
     ,'fa23-cs425-7609.cs.illinois.edu','fa23-cs425-7610.cs.illinois.edu']
 
     
-    for i, key in enumerate(NODES.keys()):
-        port = NODES[key][1]
-        NODES[key] = (ip_list[i], port)
+    #for i, key in enumerate(NODES.keys()):
+    #    port = NODES[key][1]
+    #    NODES[key] = (ip_list[i], port)
     
     # Node status (online/leave)
     status = 'online'
@@ -323,6 +312,7 @@ if __name__ == "__main__":
     filename = node_name+"log.txt"
     f = open(filename, "w")
     f.write(f"{node_name} joined\n")
+    print(f"{node_name} joined\n")
     f.close()
     if node_name not in NODES:
         print(f"Unknown node name. Choose from: {', '.join(NODES.keys())}")

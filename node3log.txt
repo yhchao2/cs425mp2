@@ -4,18 +4,3 @@ node2 joined
 node4 joined
 suspect node4 has failed!
 node4 is now active again.
-suspect node4 has failed!
-node4 failed
-Removing node4 from membership list after T_cleanup.
-node4 joined
-suspect node4 has failed!
-node4 is now active again.
-suspect node1 has failed!
-suspect node4 has failed!
-suspect node2 has failed!
-node1 failed
-node4 failed
-node2 failed
-Removing node1 from membership list after T_cleanup.
-Removing node4 from membership list after T_cleanup.
-Removing node2 from membership list after T_cleanup.
