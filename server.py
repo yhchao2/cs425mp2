@@ -87,6 +87,8 @@ def receiver(name, s):
                     for node, node_data in received_list.items():
                         if node not in membership_list and node_data["status"] != "failed":
                             membership_list[node] = {"heartbeat_counter":0,"local_clock": 0, "timestamp": 0, "version_id": 0, "status": "online", "incarnation":0}
+                            membership_list[node] = node_data
+                            membership_list[node]["local_clock"] = membership_list[node_name]["local_clock"]
                             output = node + " joined"
                             print(output)
                             log_event(output, filename)
@@ -207,7 +209,7 @@ def gossip(node_name):
         except Exception as e:
             print ("Error sending data: %s" % e) 
             print(introducer_ip, introducer_port)
-        s.settimeout(0.5)
+        s.settimeout(0.3)
         data = ""
         try:
             data, _ = s.recvfrom(4096)

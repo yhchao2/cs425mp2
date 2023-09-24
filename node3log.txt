@@ -1,5 +1,6 @@
 node3 joined
 node2 joined
-node1 joined
-suspect node1 has failed!
-node1 is now active again.
+suspect node2 has failed!
+node2 failed
+Removing node2 from membership list after T_cleanup.
+node2 joined
